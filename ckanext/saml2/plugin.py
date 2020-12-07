@@ -562,19 +562,25 @@ class Saml2Plugin(p.SingletonPlugin):
         """
         c = p.toolkit.c
         if not c.user:
+            log.info('Login requested, no user. Referer: ' + p.toolkit.request.environ['HTTP_REFERER'])
             try:
                 if p.toolkit.request.environ['pylons.routes_dict']['action'] == 'staff_login':
                     return
             except Exception:
                 pass
             if NATIVE_LOGIN_ENABLED:
+                log.info('Native login enabled')
                 c.sso_button_text = config.get('saml2.login_form_sso_text')
                 if p.toolkit.request.params.get('type') != 'sso':
-                    came_from = p.toolkit.request.params.get('came_from', None)
+                    #came_from = p.toolkit.request.params.get('came_from', None)
+                    log.info('type is not sso')
+                    came_from = p.toolkit.request.environ['HTTP_REFERER']
                     if came_from:
                         c.came_from = came_from
                     return
+            log.info('Abort with 401')
             return base.abort(401)
+        log.info('Login requested, redirecting to dashboard. Referer: ' + p.toolkit.request.environ['HTTP_REFERER'])
         h.redirect_to(controller='user', action='dashboard')
 
     def logout(self):
