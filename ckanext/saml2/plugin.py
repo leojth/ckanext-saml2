@@ -626,7 +626,7 @@ class Saml2Plugin(p.SingletonPlugin):
                 if not p.toolkit.c.user:
                     if NATIVE_LOGIN_ENABLED:
                         h.flash_error(_('Requires authentication'))
-                    h.redirect_to('login', came_from=h.full_current_url())
+                    h.redirect_to('login', came_from=p.toolkit.request.environ['HTTP_REFERER'])
                 h.redirect_to('saml2_unauthorized')
         return (status_code, detail, headers, comment)
 
