@@ -627,13 +627,16 @@ class Saml2Plugin(p.SingletonPlugin):
 
         We need to prevent this unless we are actually trying to login.
         """
-        if (status_code == 401 and
-           p.toolkit.request.environ['PATH_INFO'] != '/user/login'):
-                if not p.toolkit.c.user:
-                    if NATIVE_LOGIN_ENABLED:
-                        h.flash_error(_('Requires authentication'))
-                    h.redirect_to('login', came_from=p.toolkit.request.environ['HTTP_REFERER'])
-                h.redirect_to('saml2_unauthorized')
+        if (status_code == 401 and p.toolkit.request.environ['PATH_INFO'] != '/user/login'):
+            if not p.toolkit.c.user:
+                if NATIVE_LOGIN_ENABLED:
+                    log.info('Abort 401 detected, flash error _requires authentication_')
+                    h.flash_error(_('Requires authentication'))
+                log.info('Abort 401 detected, redirect to login with came_from=' + p.toolkit.request.environ['HTTP_REFERER'])
+                h.redirect_to('login', came_from=p.toolkit.request.environ['HTTP_REFERER'])
+            log.info('Abort 401 detected, redirect to saml2_unauthorized')
+            h.redirect_to('saml2_unauthorized')
+        log.info('Abort detected: ' + status_code)
         return (status_code, detail, headers, comment)
 
     def get_auth_functions(self):
