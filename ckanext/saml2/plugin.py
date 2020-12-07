@@ -560,9 +560,10 @@ class Saml2Plugin(p.SingletonPlugin):
         We can be here either because we are requesting a login (no user)
         or we have just been logged in.
         """
+        referer = urlparse.urlparse(p.toolkit.request.environ['HTTP_REFERER']).path
         c = p.toolkit.c
         if not c.user:
-            log.info('Login requested, no user. Referer: ' + p.toolkit.request.environ['HTTP_REFERER'])
+            log.info('Login requested, no user. Referer: ' + referer)
             try:
                 if p.toolkit.request.environ['pylons.routes_dict']['action'] == 'staff_login':
                     return
@@ -574,11 +575,21 @@ class Saml2Plugin(p.SingletonPlugin):
                 if p.toolkit.request.params.get('type') != 'sso':
                     #came_from = p.toolkit.request.params.get('came_from', None)
                     log.info('type is not sso')
-                    came_from = p.toolkit.request.environ['HTTP_REFERER']
+                    came_from = referer
                     if came_from:
                         c.came_from = came_from
                     return
+            try:
+                c.came_from = referer
+            except Exception:
+                pass
+            try:
+                if referer
+                    p.toolkit.request.environ['PATH_INFO'] = referer
+            except Exception:
+                pass
             log.info('Abort with 401')
+            
             return base.abort(401)
         log.info('Login requested, redirecting to dashboard. Referer: ' + p.toolkit.request.environ['HTTP_REFERER'])
         h.redirect_to(controller='user', action='dashboard')
