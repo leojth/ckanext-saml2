@@ -584,7 +584,7 @@ class Saml2Plugin(p.SingletonPlugin):
             except Exception:
                 pass
             try:
-                if referer
+                if referer:
                     p.toolkit.request.environ['PATH_INFO'] = referer
             except Exception:
                 pass
