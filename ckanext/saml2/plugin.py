@@ -385,7 +385,10 @@ class Saml2Plugin(p.SingletonPlugin):
         if request.method == 'POST':
             relay_state = request.POST.get('RelayState', None)
             if relay_state:
-                h.redirect_to(relay_state)
+                if (relay_state == '' or relay_state == '/' or relay_state == '%2f' or relay_state == '%2F'):
+                    h.redirect_to('/')
+                else:
+                    h.redirect_to(relay_state)
             else:
                 h.redirect_to('/dashboard')
 
