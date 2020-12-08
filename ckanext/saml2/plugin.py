@@ -385,7 +385,7 @@ class Saml2Plugin(p.SingletonPlugin):
         if request.method == 'POST':
             relay_state = request.POST.get('RelayState', None)
             if relay_state:
-                h.redirect_to(came_from)
+                h.redirect_to(relay_state)
                 #came_from = get_came_from(relay_state)
                 #if came_from:
                 #    h.redirect_to(h.url_for(came_from))
