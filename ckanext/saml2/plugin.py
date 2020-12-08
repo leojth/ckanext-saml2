@@ -555,10 +555,10 @@ class Saml2Plugin(p.SingletonPlugin):
         or we have just been logged in.
         """
         came_from = config.get('saml2.redirect_after_login', '/dashboard')
-		referer = p.toolkit.request.environ['HTTP_REFERER']
-		if came_from == 'HTTP_REFERER' and referer and p.toolkit.request.environ['HTTP_HOST'] == urlparse.urlparse(referer).hostname:
-			came_from = urlparse.urlparse(referer).path
-		
+        referer = p.toolkit.request.environ['HTTP_REFERER']
+        if came_from == 'HTTP_REFERER' and referer and p.toolkit.request.environ['HTTP_HOST'] == urlparse.urlparse(referer).hostname:
+            came_from = urlparse.urlparse(referer).path
+        
         c = p.toolkit.c
         if not c.user:
             log.info('Login requested. came_from=' + came_from + ', referer=' + referer + ', HTTP_HOST=' + p.toolkit.request.environ['HTTP_HOST'])
@@ -586,7 +586,7 @@ class Saml2Plugin(p.SingletonPlugin):
                 pass
             
             return base.abort(401)
-			
+            
         log.info('Login requested but user is already logged in. Redirecting to dashboard.')
         h.redirect_to(controller='user', action='dashboard')
 
