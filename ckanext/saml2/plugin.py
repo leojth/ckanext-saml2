@@ -386,15 +386,8 @@ class Saml2Plugin(p.SingletonPlugin):
             relay_state = request.POST.get('RelayState', None)
             if relay_state:
                 h.redirect_to(relay_state)
-                #came_from = get_came_from(relay_state)
-                #if came_from:
-                #    h.redirect_to(h.url_for(came_from))
-                #else:
-                #    redirect_after_login = config.get('saml2.redirect_after_login', '/dashboard')
-                #    h.redirect_to(redirect_after_login)
             else:
-                redirect_after_login = config.get('saml2.redirect_after_login', '/dashboard')
-                h.redirect_to(redirect_after_login)
+                h.redirect_to('/dashboard')
 
     def _create_or_update_user(self, user_name, saml_info, name_id):
         """Create or update the subject's user account and return the user
@@ -561,10 +554,14 @@ class Saml2Plugin(p.SingletonPlugin):
         We can be here either because we are requesting a login (no user)
         or we have just been logged in.
         """
-        referer = urlparse.urlparse(p.toolkit.request.environ['HTTP_REFERER']).path
+        came_from = config.get('saml2.redirect_after_login', '/dashboard')
+		referer = p.toolkit.request.environ['HTTP_REFERER']
+		if came_from == 'HTTP_REFERER' and referer and p.toolkit.request.environ['HTTP_HOST'] == urlparse.urlparse(referer).hostname:
+			came_from = urlparse.urlparse(referer).path
+		
         c = p.toolkit.c
         if not c.user:
-            log.info('Login requested, no user. Referer: ' + referer)
+            log.info('Login requested. came_from=' + came_from + ', referer=' + referer + ', HTTP_HOST=' + p.toolkit.request.environ['HTTP_HOST'])
             try:
                 if p.toolkit.request.environ['pylons.routes_dict']['action'] == 'staff_login':
                     return
@@ -574,25 +571,23 @@ class Saml2Plugin(p.SingletonPlugin):
                 log.info('Native login enabled')
                 c.sso_button_text = config.get('saml2.login_form_sso_text')
                 if p.toolkit.request.params.get('type') != 'sso':
-                    #came_from = p.toolkit.request.params.get('came_from', None)
-                    log.info('type is not sso')
-                    came_from = referer
+                    came_from = p.toolkit.request.params.get('came_from', None)
                     if came_from:
                         c.came_from = came_from
                     return
+            #try:
+            #    c.came_from = came_from
+            #except Exception:
+            #    pass
             try:
-                c.came_from = referer
+                if came_from:
+                    p.toolkit.request.environ['PATH_INFO'] = came_from
             except Exception:
                 pass
-            try:
-                if referer:
-                    p.toolkit.request.environ['PATH_INFO'] = referer
-            except Exception:
-                pass
-            log.info('Abort with 401')
             
             return base.abort(401)
-        log.info('Login requested, redirecting to dashboard. Referer: ' + p.toolkit.request.environ['HTTP_REFERER'])
+			
+        log.info('Login requested but user is already logged in. Redirecting to dashboard.')
         h.redirect_to(controller='user', action='dashboard')
 
     def logout(self):
@@ -642,13 +637,9 @@ class Saml2Plugin(p.SingletonPlugin):
         if (status_code == 401 and p.toolkit.request.environ['PATH_INFO'] != '/user/login'):
             if not p.toolkit.c.user:
                 if NATIVE_LOGIN_ENABLED:
-                    log.info('Abort 401 detected, flash error _requires authentication_')
                     h.flash_error(_('Requires authentication'))
-                log.info('Abort 401 detected, redirect to login with came_from=' + p.toolkit.request.environ['HTTP_REFERER'])
                 h.redirect_to('login', came_from=p.toolkit.request.environ['HTTP_REFERER'])
-            log.info('Abort 401 detected, redirect to saml2_unauthorized')
             h.redirect_to('saml2_unauthorized')
-        log.info('Abort detected: ' + status_code)
         return (status_code, detail, headers, comment)
 
     def get_auth_functions(self):
