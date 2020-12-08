@@ -385,7 +385,7 @@ class Saml2Plugin(p.SingletonPlugin):
         if request.method == 'POST':
             relay_state = request.POST.get('RelayState', None)
             if relay_state:
-                if (relay_state == '' or relay_state == '/' or relay_state == '%2f' or relay_state == '%2F'):
+                if (relay_state == '' or relay_state == '/start' or relay_state == '%2f' or relay_state == '%2F'):
                     h.redirect_to('/')
                 else:
                     h.redirect_to(relay_state)
@@ -561,6 +561,8 @@ class Saml2Plugin(p.SingletonPlugin):
         referer = p.toolkit.request.environ['HTTP_REFERER']
         if came_from == 'HTTP_REFERER' and referer and p.toolkit.request.environ['HTTP_HOST'] == urlparse.urlparse(referer).hostname:
             came_from = urlparse.urlparse(referer).path
+        if came_from == '/' or came_from == '':
+            came_from = '/start'
         
         c = p.toolkit.c
         if not c.user:
@@ -637,12 +639,13 @@ class Saml2Plugin(p.SingletonPlugin):
 
         We need to prevent this unless we are actually trying to login.
         """
-        if (status_code == 401 and p.toolkit.request.environ['PATH_INFO'] != '/user/login'):
-            if not p.toolkit.c.user:
-                if NATIVE_LOGIN_ENABLED:
-                    h.flash_error(_('Requires authentication'))
-                h.redirect_to('login', came_from=p.toolkit.request.environ['HTTP_REFERER'])
-            h.redirect_to('saml2_unauthorized')
+        if (status_code == 401 and
+           p.toolkit.request.environ['PATH_INFO'] != '/user/login'):
+                if not p.toolkit.c.user:
+                    if NATIVE_LOGIN_ENABLED:
+                        h.flash_error(_('Requires authentication'))
+                    h.redirect_to('login', came_from=h.full_current_url())
+                h.redirect_to('saml2_unauthorized')
         return (status_code, detail, headers, comment)
 
     def get_auth_functions(self):
